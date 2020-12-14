@@ -315,13 +315,6 @@ static int altivec_ ## name(SwsContext *c, const unsigned char **in,          \
     const ubyte *ui  = in[1];                                                 \
     const ubyte *vi  = in[2];                                                 \
                                                                               \
-    vector unsigned char *oute =                                              \
-        (vector unsigned char *)                                              \
-            (oplanes[0] + srcSliceY * outstrides[0]);                         \
-    vector unsigned char *outo =                                              \
-        (vector unsigned char *)                                              \
-            (oplanes[0] + srcSliceY * outstrides[0] + outstrides[0]);         \
-                                                                              \
     /* loop moves y{1, 2}i by w */                                            \
     instrides_scl[0] = instrides[0] * 2 - w;                                  \
     /* loop moves ui by w / 2 */                                              \
@@ -330,6 +323,15 @@ static int altivec_ ## name(SwsContext *c, const unsigned char **in,          \
     instrides_scl[2] = instrides[2] - w / 2;                                  \
                                                                               \
     for (i = 0; i < h / 2; i++) {                                             \
+    /* Fix broken stride handling in swscale/ppc */                           \
+    /*github.com/libav/libav/commit/94df17915e8e35f98b3ba5c16019b1229b3f1bd0*/\
+    vector unsigned char *oute =                                              \
+        (vector unsigned char *)                                              \
+            (oplanes[0] + srcSliceY * outstrides[0]);                         \
+    vector unsigned char *outo =                                              \
+        (vector unsigned char *)                                              \
+            (oplanes[0] + srcSliceY * outstrides[0] + outstrides[0]);         \
+                                                                              \
         vec_dstst(outo, (0x02000002 | (((w * 3 + 32) / 32) << 16)), 0);       \
         vec_dstst(oute, (0x02000002 | (((w * 3 + 32) / 32) << 16)), 1);       \
                                                                               \

@@ -39,6 +39,14 @@
 #include "intreadwrite.h"
 #include "mem.h"
 
+/*
+ * Workaround for android 
+ * https://github.com/libav/libav/commit/794d666274cdea6d45dbecb08be67b211d41855c
+ */
+#ifdef __ANDROID__
+int   posix_memalign(void **ptr, size_t align, size_t size);
+#endif
+
 #ifdef MALLOC_PREFIX
 
 #define malloc         AV_JOIN(MALLOC_PREFIX, malloc)

@@ -64,7 +64,19 @@ static uint32_t get_generic_seed(void)
     uint64_t last_i = i;
 
     for (;;) {
-        clock_t t = clock();
+        //clock_t t = clock();
+
+/*
+ * ps3: Work around missing clock() 
+ * https://github.com/libav/libav/commit/c5b5febc39278515d537a4b3f5d12ffa09c24c06
+ */
+#ifdef AV_READ_TIME
+    clock_t t = AV_READ_TIME();
+#else
+    clock_t t = clock();
+#endif
+
+
 
         if (last_t == t) {
             buffer[i & 511]++;

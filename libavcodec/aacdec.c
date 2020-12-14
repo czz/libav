@@ -117,6 +117,23 @@ static VLC vlc_spectral[11];
 
 static const char overread_err[] = "Input buffer exhausted before END element found\n";
 
+/*
+ * Reset configuration when ADTS channel layout changes 
+ * https://github.com/libav/libav/commit/b00fe4be6d2af21c694d86b923dbe326d1b37973
+ */
+static av_cold void aac_reset(AACContext *ac)
+{
+    int i, type;
+
+    for (i = 0; i < MAX_ELEM_ID; i++) {
+        for (type = 0; type < 4; type++) {
+            if (ac->che[type][i])
+                ff_aac_sbr_ctx_close(&ac->che[type][i]->sbr);
+            av_freep(&ac->che[type][i]);
+        }
+    }
+}
+
 static int count_channels(uint8_t (*layout)[3], int tags)
 {
     int i, sum = 0;
@@ -2714,16 +2731,30 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
         }
         push_output_configuration(ac);
         if (hdr_info.chan_config) {
-            ac->oc[1].m4ac.chan_config = hdr_info.chan_config;
-            if ((ret = set_default_channel_config(ac->avctx,
-                                                  layout_map,
-                                                  &layout_map_tags,
-                                                  hdr_info.chan_config)) < 0)
-                return ret;
-            if ((ret = output_configure(ac, layout_map, layout_map_tags,
-                                        FFMAX(ac->oc[1].status,
-                                              OC_TRIAL_FRAME), 0)) < 0)
-                return ret;
+
+
+            /*
+             * Reset configuration when ADTS channel layout changes 
+             * https://github.com/libav/libav/commit/b00fe4be6d2af21c694d86b923dbe326d1b37973
+             * https://github.com/libav/libav/commit/d36386ffce510032d8eef267b7a51a41e1c777d8 adding samplerate
+             */
+            if(ac->oc[1].m4ac.chan_config != hdr_info.chan_config || ac->oc[1].m4ac.sample_rate != hdr_info.sample_rate) {
+
+                aac_reset(ac);
+
+                ac->oc[1].m4ac.chan_config = hdr_info.chan_config;
+                ac->oc[1].m4ac.sample_rate = hdr_info.sample_rate; 
+                if ((ret = set_default_channel_config(ac->avctx,
+                                                      layout_map,
+                                                      &layout_map_tags,
+                                                      hdr_info.chan_config)) < 0)
+                    return ret;
+                if ((ret = output_configure(ac, layout_map, layout_map_tags,
+                                            FFMAX(ac->oc[1].status,
+                                                 OC_TRIAL_FRAME), 0)) < 0)
+                    return ret;
+            }
+
         } else {
             ac->oc[1].m4ac.chan_config = 0;
         }
@@ -3023,6 +3054,15 @@ static int aac_decode_frame(AVCodecContext *avctx, void *data,
 static av_cold int aac_decode_close(AVCodecContext *avctx)
 {
     AACContext *ac = avctx->priv_data;
+
+    /*
+     * Reset configuration when ADTS channel layout changes 
+     * https://github.com/libav/libav/commit/b00fe4be6d2af21c694d86b923dbe326d1b37973
+     */
+    aac_reset(ac); 
+
+    /*
+    // For this there is a new function on top of this file:  static av_cold void aac_reset(AACContext *ac)
     int i, type;
 
     for (i = 0; i < MAX_ELEM_ID; i++) {
@@ -3032,6 +3072,7 @@ static av_cold int aac_decode_close(AVCodecContext *avctx)
             av_freep(&ac->che[type][i]);
         }
     }
+    */
 
     ff_mdct_end(&ac->mdct);
     ff_mdct_end(&ac->mdct_small);

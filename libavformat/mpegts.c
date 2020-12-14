@@ -1864,7 +1864,11 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
     if (p >= p_end)
         return 0;
 
-    pos = avio_tell(ts->stream->pb);
+    //pos = avio_tell(ts->stream->pb);
+    // Fix broken pos47 computation 
+    // https://github.com/libav/libav/commit/2b6e5e78f2ac58653721736a33178b1a6d056285
+    pos = avio_tell(ts->stream->pb) + ts->raw_packet_size - TS_PACKET_SIZE; 
+
     MOD_UNLIKELY(ts->pos47, pos, ts->raw_packet_size, ts->pos);
 
     if (tss->type == MPEGTS_SECTION) {

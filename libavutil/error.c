@@ -49,6 +49,13 @@ int av_strerror(int errnum, char *errbuf, size_t errbuf_size)
     } else {
 #if HAVE_STRERROR_R
         ret = strerror_r(AVUNERROR(errnum), errbuf, errbuf_size);
+
+// ps3: Fix correct error reporting 
+// https://github.com/libav/libav/commit/07579cf4ba7c9ae9e1887945f16c750e11a4a580
+#ifdef __PPU__
+    ret = 0;
+#endif
+
 #else
         ret = -1;
 #endif

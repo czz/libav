@@ -366,6 +366,18 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         pix_fmt_id -= (pix_fmt_id & 0x0F0F0F0F) >> 1;
 
     switch (pix_fmt_id) {
+
+    // Add support for AV_PIX_FMT_YUVA444P 
+    // https://github.com/libav/libav/commit/5e5b90dc7a395ad3f0a150169b94d488f14d5349
+    case 0x11111111:
+        if (s->rgb)
+            s->avctx->pix_fmt = AV_PIX_FMT_BGRA;
+        else
+            s->avctx->pix_fmt = AV_PIX_FMT_YUVA444P;
+        assert(s->nb_components == 4);
+        break;
+
+
     case 0x11111100:
         if (s->rgb)
             s->avctx->pix_fmt = AV_PIX_FMT_BGRA;

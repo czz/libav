@@ -304,6 +304,12 @@ av_cold void ff_sws_init_swscale_ppc(SwsContext *c)
         c->yuv2planeX = yuv2planeX_altivec;
     }
 
+/*
+ * Disable some broken scaling on ppc 
+ * https://github.com/libav/libav/commit/c9a784a953b3f7c288ecb776ff012d732c46f090
+ */
+#if 0
+
     /* The following list of supported dstFormat values should
      * match what's found in the body of ff_yuv2packedX_altivec() */
     if (!(c->flags & (SWS_BITEXACT | SWS_FULL_CHR_H_INT)) && !c->alpPixBuf) {
@@ -328,5 +334,7 @@ av_cold void ff_sws_init_swscale_ppc(SwsContext *c)
             break;
         }
     }
+#endif
+
 #endif /* HAVE_ALTIVEC */
 }

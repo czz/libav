@@ -4532,7 +4532,11 @@ esac
 
 check_func_headers malloc.h _aligned_malloc     && enable aligned_malloc
 check_func  ${malloc_prefix}memalign            && enable memalign
-check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
+#check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
+# Don't use posix_memalign on Android 
+# https://github.com/libav/libav/commit/3f219d9adf870fd6bd927e8a8dc32d1e7edb179a
+[ $target_os != android ] && check_func  ${malloc_prefix}posix_memalign && enable posix_memalign
+
 
 test_cpp_condition unistd.h "defined(_POSIX_MONOTONIC_CLOCK)" &&
     { check_lib clock_gettime time.h clock_gettime ||

@@ -289,7 +289,10 @@ static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc,
     FLVContext *flv       = s->priv_data;
     unsigned int arraylen = 0, timeslen = 0, fileposlen = 0, i;
     double num_val;
-    char str_val[256];
+    // char str_val[256];
+    // Increase string buffer to avoid bailing on some streams 
+    // https://github.com/libav/libav/commit/1d5860c6fd4110e7de15549b16ee6ed12ace12c6
+    char str_val[1024];
     int64_t *times         = NULL;
     int64_t *filepositions = NULL;
     int ret                = AVERROR(ENOSYS);

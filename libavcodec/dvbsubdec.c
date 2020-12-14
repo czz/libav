@@ -1247,10 +1247,20 @@ static int dvbsub_parse_display_definition_segment(AVCodecContext *avctx,
     display_def->width   = bytestream_get_be16(&buf) + 1;
     display_def->height  = bytestream_get_be16(&buf) + 1;
 
+    // fixes #3234, #3291: dvbsubdec.c 
+    // https://github.com/libav/libav/commit/a5d50fcc2817c917dd60d1540c19d104624ec132
+    if (!avctx->width || !avctx->height) {
+        avctx->width  = display_def->width;
+        avctx->height = display_def->height;
+    }
+
+    if (info_byte & 1<<3) { // display_window_flag
+
+
     if (buf_size < 13)
         return AVERROR_INVALIDDATA;
 
-    if (info_byte & 1<<3) { // display_window_flag
+//    if (info_byte & 1<<3) { // display_window_flag
         display_def->x = bytestream_get_be16(&buf);
         display_def->y = bytestream_get_be16(&buf);
         display_def->width  = bytestream_get_be16(&buf) - display_def->x + 1;
@@ -1276,7 +1286,12 @@ static int dvbsub_display_end_segment(AVCodecContext *avctx, const uint8_t *buf,
 
     sub->rects = NULL;
     sub->start_display_time = 0;
-    sub->end_display_time = ctx->time_out * 1000;
+    // sub->end_display_time = ctx->time_out * 1000;
+
+    // fixes #3234, #3291: dvbsubdec.c 
+    // https://github.com/libav/libav/commit/a5d50fcc2817c917dd60d1540c19d104624ec132
+    sub->end_display_time = ( (ctx->time_out<500 || ctx->time_out>5000) ? 5000 : (ctx->time_out * 1000) );
+
     sub->format = 0;
 
     if (display_def) {
@@ -1308,7 +1323,10 @@ static int dvbsub_display_end_segment(AVCodecContext *avctx, const uint8_t *buf,
         region = get_region(ctx, display->region_id);
         rect = sub->rects[i];
 
-        if (!region)
+        //if (!region)
+        // fixes #3234, #3291: dvbsubdec.c 
+        // https://github.com/libav/libav/commit/a5d50fcc2817c917dd60d1540c19d104624ec132
+        if (!region || !rect)
             continue;
 
         rect->x = display->x_pos + offset_x;
